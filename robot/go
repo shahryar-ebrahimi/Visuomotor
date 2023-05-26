@@ -1,0 +1,67 @@
+#! /bin/sh
+
+# set -x
+
+# go - load the linux kernel modules
+# load calibration data from imt2.cal too
+
+# InMotion2 robot system software for RTLinux
+
+# Copyright 2003-2005 Interactive Motion Technologies, Inc.
+# Cambridge, MA, USA
+# http://www.interactive-motion.com
+# All rights reserved
+
+PATH=/usr/local/bin:/bin:/usr/bin:/usr/X11R6/bin:/sbin:/usr/sbin
+
+if lsmod | grep -E -q 'pwrdaq'; then
+    echo "PowerDAQ module already loaded."
+else
+    echo "Loading PowerDAQ module."
+    ./loadmodules.sh
+fi
+
+
+if pkill -0 -x robot; then
+    echo "old robot still running, stopping."
+    ./stop || { 
+	echo "couldn't stop, exiting."; exit 1
+    }
+fi
+
+
+
+# flush disk buffers, could help in case something crashes.
+sync;sync
+
+# /proc/pwrdaq has been loaded, and should be present.
+
+I=0
+while [ ! -r /proc/pwrdaq ]; do
+    if [ $I -gt 20 ]; then
+	echo "go: could not load UEI PowerDAQ module."
+	./stop
+	exit 1
+    fi
+    I=`expr $I + 1`
+    sleep 0.1
+done
+
+sudo ./robot &
+
+sleep 0.1
+
+#I=0
+#while ! pkill -0 -x robot ; do
+#    if [ $I -gt 20 ]; then#
+#	echo "go: could not start robot"
+#	./stop
+#	exit 1
+#    fi
+#    I=`expr $I + 1`
+#    sleep 0.1
+#done
+
+#sleep 0.1
+
+exit 0
